@@ -168,7 +168,7 @@ fix_serial() {                           # 串口放权：仅对"存在但当前
         case "${seen}" in *" ${dev} "*) continue ;; esac
         seen="${seen}${dev} "
         [[ -w "${dev}" ]] && continue
-        if sudo_run chgrp dialout "${dev}" && sudo_run chmod 660 "${dev}"; then
+        if sudo_run chgrp dialout "${dev}" && sudo_run chmod 660 "${dev}" && [[ -w "${dev}" ]]; then
             echo "[autostart] 串口已放权: ${dev}"
         else
             echo "[autostart] 警告：无法放权 ${dev}"
