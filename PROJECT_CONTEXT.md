@@ -292,7 +292,7 @@ dpkg -l | grep yaml-cpp           # libyaml-cpp-dev (已安装)
 
 ### 第三步: 编译项目
 ```bash
-cd /path/to/visionpost
+cd /home/youruser/visionpost
 mkdir -p build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4
 # 产物: vision_system (~5MB) + vision_demo (~5MB), ARM aarch64
@@ -380,7 +380,7 @@ grep -i topk yolo26n_ncnn_model/*.param  # 应无输出
 cd yolo26n_ncnn_model
 mv yolo26n_ncnn_model.param yolo26n.ncnn.param
 mv yolo26n_ncnn_model.bin   yolo26n.ncnn.bin
-scp yolo26n.ncnn.* user@rpi5:/path/to/visionpost/model/fp16/
+scp yolo26n.ncnn.* user@rpi5:/home/youruser/visionpost/model/fp16/
 ```
 
 ### 核心原则

@@ -1,4 +1,7 @@
 # 视觉识别系统 — YOLO26n + NCNN + OpenCV 树莓派5
+> **实验分支说明**：本分支是 NCNN/YOLO 实验实现，不属于 `main`；仓库不包含任何模型权重。
+> 若使用 Ultralytics 训练权重，其许可证为 AGPL-3.0，请不要把权重提交到本仓库。
+
 
 Raspberry Pi 5 Ubuntu 24.04 ARM64 实时视觉识别系统。
 YOLO26n 目标检测 + HSV 颜色识别 + UART 串口通信。
@@ -177,7 +180,7 @@ make -j4 && sudo make install && sudo ldconfig
 
 ```bash
 # 1. 编译
-cd /path/to/visionpost
+cd /home/youruser/visionpost
 mkdir -p build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4
 
