@@ -99,7 +99,7 @@ cd tools/dataset_capture && mkdir build && cd build && cmake .. && make -j4
 ## 项目结构
 
 ```
-Cross-post/
+visionpost/
 ├── CMakeLists.txt                       # 主构建 (vision_system + vision_demo)
 ├── main.cpp                             # 生产流水线
 ├── camera/

@@ -58,7 +58,7 @@ GPU:    RTX4060 Laptop GPU
 ## 三、项目结构 (43 文件, 5,148 行)
 
 ```
-Cross-post/                              # Git仓库根目录
+visionpost/                              # Git仓库根目录
 │
 ├── CMakeLists.txt                        # 双target构建 (vision_system + vision_demo)
 │
