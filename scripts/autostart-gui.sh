@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 jianquwuying
 # ============================================================================
 # autostart-gui.sh — 开机自启动入口（供 ~/.config/autostart/*.desktop 调用）
-# 26年第十二届工程实践与创新大赛（参赛作品）· 树莓派 5 视觉终端 visionpost
+# 第十二届河北省大学生工程实践与创新能力大赛暨 2027 年中国大学生工程实践与创新能力大赛选拔赛（参赛作品）· 树莓派 5 视觉终端 visionpost
 #
 # 为什么需要这一层：
 #   登录初期 gnome-terminal-server / D-Bus 往往还没就绪，此时直接

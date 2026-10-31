@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 jianquwuying
+# visionpost serial permissions
+#
+# Install:
+#   sudo cp scripts/99-visionpost.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger
+#
+# Then make sure your user is in the dialout group:
+#   sudo usermod -aG dialout "$USER"
+# (log out and back in for the group change to take effect)
+
+SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", GROUP="dialout", MODE="0660"
+SUBSYSTEM=="tty", KERNEL=="ttyUSB[0-9]*", GROUP="dialout", MODE="0660"
+SUBSYSTEM=="tty", KERNEL=="ttyCH341USB[0-9]*", GROUP="dialout", MODE="0660"

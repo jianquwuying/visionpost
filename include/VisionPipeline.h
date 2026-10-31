@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 jianquwuying
 #pragma once
 // ============================================================================
 // VisionPipeline.h  —  视觉算法调度 + Kalman 滤波器管理

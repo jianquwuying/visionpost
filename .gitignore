@@ -46,3 +46,24 @@ __pycache__/
 tmp/
 temp/
 *.tmp
+
+# 录制 / 日志目录（运行时生成）
+record/
+
+# 模型权重与推理引擎文件（避免误提交第三方权重）
+model/*.pt
+model/*.pth
+model/*.onnx
+model/*.param
+model/*.bin
+*.pt
+*.pth
+*.onnx
+*.param
+*.bin
+
+# 工具缓存
+compile_commands.json
+CMakeUserPresets.json
+.cache/
+.clangd/

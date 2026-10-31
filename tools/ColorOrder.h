@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 jianquwuying
 #pragma once
 // ============================================================================
 // ColorOrder.h  —  模式0 颜色定义与顺序

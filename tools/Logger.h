@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 jianquwuying
 #pragma once
 // ============================================================================
 // Logger.h  —  彩色控制台 + 文件双通道日志（单例，线程安全）

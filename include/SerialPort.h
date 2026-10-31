@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 jianquwuying
 #pragma once
 // ============================================================================
 // SerialPort.h  —  UART 通信（非阻塞）

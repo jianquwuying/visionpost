@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 jianquwuying
 #pragma once
 // ============================================================================
 // ThreadSafeSendQueue  —  生产者-消费者队列（用于串口发送）

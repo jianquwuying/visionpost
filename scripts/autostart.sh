@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 jianquwuying
 # ============================================================================
-# autostart.sh — 26年第十二届工程实践与创新大赛（参赛作品）
+# autostart.sh — 第十二届河北省大学生工程实践与创新能力大赛暨 2027 年中国大学生工程实践与创新能力大赛选拔赛（参赛作品）
 #                树莓派 5 视觉终端 visionpost：开机自启动 + 看门狗（整合为一）
 #
 # ── 子命令 ────────────────────────────────────────────────────────────────
@@ -10,7 +12,7 @@
 #   stop     优雅停止 visionpost 与看门狗（SIGINT 优雅关闭）
 #   restart  stop 后再 start（当前终端转为看门狗）
 #   status   查看看门狗 / visionpost 运行状态
-#   doctor   环境自检：可执行文件 / 配置文件 / 串口 / 摄像头 / sudo 权限
+#   doctor   环境自检：可执行文件 / 配置文件 / 串口 / 摄像头 / 串口权限
 #   用法示例：bash scripts/autostart.sh [start|stop|restart|status|doctor] [config.yaml]
 #
 # ── 开机自启动（推荐使用 autostart-gui.sh）────────────────────────────────
@@ -33,11 +35,12 @@
 #   放权对象不写死：优先使用 config/vision.yaml 的 serial.port，再自动扫描
 #   /dev/ttyACM* /dev/ttyUSB* /dev/ttyCH341USB*（USB 转串口）。
 #   本机不用板载 UART（ttyAMA0/ttyAMA10），故不纳入放权范围。
-#   注：运行用户不在 dialout 组时，USB 串口必须放权才能打开。
-#   放权顺序：先试免密 sudo（sudo -n），失败再退回密码管道
-#   `echo <密码> | sudo -S chmod 666`；密码见下方 REMOVED_SUDO_MECHANISM（本机密码请用环境变量设置，
-#   可用环境变量 REMOVED_SUDO_MECHANISM 覆盖）。
-#   更稳妥方案（无需 sudo / 密码）：改用 udev 规则，见文件末尾注释。
+#   推荐做法（无需 sudo 密码）：
+#     1) 把运行用户加入 dialout 组：sudo usermod -aG dialout "$USER"（重新登录生效）
+#     2) 或安装 udev 规则：sudo cp scripts/99-visionpost.rules /etc/udev/rules.d/
+#        sudo udevadm control --reload-rules && sudo udevadm trigger
+#   脚本只会尝试免密 sudo（sudo -n）做一次 chgrp/chmod；失败时打印上述指引，
+#   不再保存或读取任何密码。
 # ============================================================================
 
 # 不用 set -e：看门狗需要自行处理子进程非零退出；只打开“未定义变量即报错”
@@ -46,7 +49,6 @@ set -u
 # ---------------------------------------------------------------------------
 # 可配置参数
 # ---------------------------------------------------------------------------
-REMOVED_SUDO_MECHANISM="${REMOVED_SUDO_MECHANISM:-}"  # sudo 密码（改密码请改本行，或用环境变量覆盖）
 SEC=2                                  # 快速崩溃后的重启间隔（秒）
 PROGRAM='visionpost'
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -139,9 +141,8 @@ handle_signal() {                        # INT / TERM / HUP：优雅整体退出
     exit 0
 }
 
-sudo_run() {                             # 先免密 sudo，失败再退回密码管道
-    sudo -n "$@" 2>/dev/null && return 0
-    echo "${REMOVED_SUDO_MECHANISM}" | sudo -S "$@" 2>/dev/null
+sudo_run() {                             # 只使用免密 sudo；不再读取/保存密码
+    sudo -n "$@" 2>/dev/null
 }
 
 config_serial_port() {                   # 读配置文件中第一个 port: 键（即 serial.port，最权威来源）
@@ -167,10 +168,12 @@ fix_serial() {                           # 串口放权：仅对"存在但当前
         case "${seen}" in *" ${dev} "*) continue ;; esac
         seen="${seen}${dev} "
         [[ -w "${dev}" ]] && continue
-        if sudo_run chmod 666 "${dev}"; then
+        if sudo_run chgrp dialout "${dev}" && sudo_run chmod 660 "${dev}"; then
             echo "[autostart] 串口已放权: ${dev}"
         else
-            echo "[autostart] 警告：无法放权 ${dev}（检查 REMOVED_SUDO_MECHANISM，或改用 udev 规则，见文件末尾）"
+            echo "[autostart] 警告：无法放权 ${dev}"
+            echo "            请执行：sudo usermod -aG dialout \"$USER\"（重新登录）"
+            echo "            或安装：sudo cp scripts/99-visionpost.rules /etc/udev/rules.d/ && sudo udevadm control --reload-rules"
         fi
     done < <(serial_devices)
 }
@@ -269,8 +272,8 @@ run_watchdog() {
         if (( crash_streak > MAX_RESTARTS )); then
             log "连续快速崩溃超过 ${MAX_RESTARTS} 次，放弃自动重启。"
             log "处理：按 Ctrl+C 关闭本终端，排障后重新运行；或执行 bash scripts/autostart.sh start"
-            # 若希望改成“整机重启”兜底，取消下面一行的注释（使用 REMOVED_SUDO_MECHANISM 密码管道）：
-            # echo "${REMOVED_SUDO_MECHANISM}" | sudo -S reboot
+            # 若希望改成“整机重启”兜底，取消下面一行的注释（需要免密 sudo 权限）：
+            # sudo -n reboot
             while :; do interruptible_sleep 3600; done    # 保持终端打开，且可被 stop/Ctrl+C 打断
         fi
 
@@ -347,13 +350,13 @@ cmd_doctor() {
     echo "配置串口    : ${port:-<未配置>}"
     if [[ -n "${port}" ]]; then
         if [[ -e "${port}" ]]; then
-            echo "串口状态    : $([[ -w "${port}" ]] && echo 可写 || echo 不可写（看门狗会自动放权）)"
+            echo "串口状态    : $([[ -w "${port}" ]] && echo 可写 || echo 不可写（见 README 的 dialout/udev 说明）)"
         else
             echo "串口状态    : 设备不存在（未插好 / 主控未上电）"
         fi
     fi
     echo "扫描到串口  : $(serial_devices | sort -u | tr '\n' ' ')"
-    echo "  （USB 转串口；运行用户不在 dialout 组时由看门狗自动放权。不使用板载 UART）"
+    echo "  （USB 转串口；运行用户不在 dialout 组时按 README 加入该组，或安装 udev 规则。不使用板载 UART）"
 
     local cam f name
     cam="$(for f in /sys/class/video4linux/*/name; do
@@ -373,7 +376,7 @@ cmd_doctor() {
     if sudo -n true 2>/dev/null; then
         echo "sudo        : 免密可用"
     else
-        echo "sudo        : 需要密码（脚本使用 REMOVED_SUDO_MECHANISM，可用 REMOVED_SUDO_MECHANISM 覆盖）"
+        echo "sudo        : 不可用（脚本不使用密码；串口权限请用 dialout 组或 udev 规则）"
     fi
     echo "用户/组     : $(id -un) groups=$(id -Gn)"
     if [[ -f "${PID_FILE}" ]] && is_running "$(cat "${PID_FILE}")"; then
@@ -407,19 +410,18 @@ main() {
 main "$@"
 
 # ============================================================================
-# 【可选 · 更稳妥的串口放权方式（udev，插拔/重启后自动 666，无需 sudo/密码）】
-#   新建 /etc/udev/rules.d/99-visionpost.rules，内容：
-#       KERNEL=="ttyACM[0-9]*", MODE="0666"
-#       KERNEL=="ttyUSB[0-9]*", MODE="0666"
-#       KERNEL=="ttyCH341USB[0-9]*", MODE="0666"
-#   然后执行：sudo udevadm control --reload-rules
-#   之后插拔串口即自动放权，可移除脚本内的 REMOVED_SUDO_MECHANISM / fix_serial 逻辑。
+# 【串口权限 · 推荐方式（无需 sudo 密码）】
+#   方式一（推荐）：把用户加入 dialout 组
+#       sudo usermod -aG dialout "$USER"
+#     （执行后注销/重新登录，使组权限生效）
 #
-#   一键写入（本机密码请用环境变量设置，可用 REMOVED_SUDO_MECHANISM 覆盖）：
-#     echo 1 | sudo -S bash -c 'cat > /etc/udev/rules.d/99-visionpost.rules <<EOF
-#     KERNEL=="ttyACM[0-9]*", MODE="0666"
-#     KERNEL=="ttyUSB[0-9]*", MODE="0666"
-#     KERNEL=="ttyCH341USB[0-9]*", MODE="0666"
-#     EOF'
-#     sudo udevadm control --reload-rules && sudo udevadm trigger
+#   方式二：安装 udev 规则（插拔/重启后自动生效）
+#       sudo cp scripts/99-visionpost.rules /etc/udev/rules.d/
+#       sudo udevadm control --reload-rules
+#       sudo udevadm trigger
+#
+#   规则内容（0660 + dialout 组）：
+#       SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", GROUP="dialout", MODE="0660"
+#       SUBSYSTEM=="tty", KERNEL=="ttyUSB[0-9]*", GROUP="dialout", MODE="0660"
+#       SUBSYSTEM=="tty", KERNEL=="ttyCH341USB[0-9]*", GROUP="dialout", MODE="0660"
 # ============================================================================

@@ -1,0 +1,17 @@
+* text=auto eol=lf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.avi  binary
+*.mp4  binary
+*.mkv  binary
+*.onnx binary
+*.pt   binary
+*.pth  binary
+*.bin  binary
+*.param binary
+*.o    binary
+*.a    binary
+*.so   binary

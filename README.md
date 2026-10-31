@@ -1,10 +1,12 @@
-# RaspberryPi5 视觉识别系统
+# visionpost — Raspberry Pi 5 实时视觉终端
 
-> **26年第十二届工程实践与创新大赛** · 参赛作品
+> **第十二届河北省大学生工程实践与创新能力大赛暨 2027 年中国大学生工程实践与创新能力大赛选拔赛** · 参赛作品
+>
+> 本项目是作者参赛作品的开源实现，仅代表作者个人，不代表赛事主办方、承办方或评审机构。
 
 树莓派 5 上的实时视觉终端：纯传统 OpenCV 流水线完成目标检测与跟踪，经串口把目标坐标上报主控。无深度学习、无 GPU 依赖。
 
-**可执行程序：** `visionpost`
+**可执行程序：** `visionpost` · **许可：** MIT
 
 ---
 
@@ -16,11 +18,22 @@
 | 系统 | Ubuntu 24.04.4 LTS（aarch64） |
 | 摄像头 | USB UVC，MJPG 640×480 @ 60 FPS（V4L2） |
 | 串口 | USB 转串口 `/dev/ttyACM0`，115200 8N1（不使用板载 UART） |
-| 工具链 | GCC 13.3+ / CMake 3.28+ / OpenCV 4.8+ / yaml-cpp 0.8+ |
+| 工具链 | GCC 13.3.0 / CMake 3.28.3 / OpenCV **4.8.0** / yaml-cpp 0.8.0 |
+
+**OpenCV 版本固定为 4.8.0，源码安装到 `/usr/local`。** Ubuntu 24.04 的 `libopencv-dev` 是 4.6.0，**不满足**本项目的 `find_package(OpenCV 4.8 REQUIRED)`，请不要安装它。
 
 ```bash
-sudo apt install build-essential cmake libopencv-dev libyaml-cpp-dev
+# 1) 基础工具与 yaml-cpp（CMake 需 3.28+；已安装 3.28.3 时可跳过 cmake）
+sudo apt install build-essential cmake libyaml-cpp-dev
+
+# 2) 安装 OpenCV 4.8.0 到 /usr/local（Pi 5 上约 30–60 分钟）
+bash scripts/install-opencv-4.8.sh
+
+# 3) 校验：必须输出 4.8.0
+pkg-config --modversion opencv4
 ```
+
+> 如果机器上同时存在 apt 的 4.6 与 `/usr/local` 的 4.8，CMake 默认优先 `/usr/local`；若仍找错，构建时加 `-DOpenCV_DIR=/usr/local/lib/cmake/opencv4`。
 
 ---
 
@@ -69,6 +82,10 @@ CameraThread ──(单槽帧缓冲)──> ProcessThread ──(发送队列)�
 ### 模式1 — 多圆环数字识别
 
 靶标为「中心衬线数字 1/2/3 + 多层同心细环」的印章图案，视野内可同时出现多个。
+
+| 环 1 | 环 2 | 环 3 |
+|---|---|---|
+| ![环 1](docs/images/target-ring-1.jpg) | ![环 2](docs/images/target-ring-2.jpg) | ![环 3](docs/images/target-ring-3.jpg) |
 
 ```
 ROI → 灰度 → 高斯模糊 → 自适应阈值 → 开运算 → 轮廓
@@ -125,14 +142,17 @@ ROI → 灰度 → 高斯模糊 → 自适应阈值 → 开运算 → 轮廓
 
 ```bash
 # 编译（Release，-O3）
-mkdir -p build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j4
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j4
 
 # 运行（默认读取 ../config/vision.yaml）
+cd build
 ./visionpost
 ./visionpost /path/to/custom.yaml
 ```
+
+> 若 CMake 报找不到 OpenCV 4.8：确认已按上面的步骤把 4.8.0 安装到 `/usr/local`，或显式指定
+> `-DOpenCV_DIR=/usr/local/lib/cmake/opencv4`。不要用 apt 的 4.6.0。
 
 ### 看门狗与自启动
 
@@ -145,7 +165,7 @@ scripts/autostart.sh doctor     # 环境自检（可执行文件/串口/摄像�
 ```
 
 - 快速崩溃连续超过 `MAX_RESTARTS`（10）次则放弃；**硬件未就绪**（摄像头/串口未枚举）走 5 s 长间隔重试，不消耗崩溃额度
-- 串口权限自动放行：先读 `serial.port`，再扫描 `/dev/ttyACM*`、`/dev/ttyUSB*`、`/dev/ttyCH341USB*`
+- 串口权限：把运行用户加入 `dialout` 组，或安装 `scripts/99-visionpost.rules`（udev，`0660 + dialout`）；脚本不再保存/读取 sudo 密码
 - 开机自启入口为 `scripts/autostart-gui.sh`，优先弹终端并重试 3 次，失败退化为后台运行
 
 > `.desktop` 的 `Exec` 不经过 shell，**必须写绝对路径**；`$HOME`、`~` 不会展开，写成变量会被判非法而不执行。
@@ -201,11 +221,37 @@ scripts/autostart.sh doctor     # 环境自检（可执行文件/串口/摄像�
 ## 目录结构
 
 ```
-├── CMakeLists.txt              # C++17 / ARM NEON / OpenCV 6 组件
+├── CMakeLists.txt              # C++17 / Cortex-A76 优化 / OpenCV 6 组件
+├── LICENSE                     # MIT
+├── THIRD_PARTY_NOTICES.md      # 第三方依赖许可说明
+├── CONTRIBUTING.md
+├── SECURITY.md
+├── CHANGELOG.md
 ├── config/vision.yaml          # 唯一配置来源
+├── docs/                       # 开发笔记、图片
+│   ├── PROJECT_NOTES.md
+│   └── images/                 # 靶标照片（MIT）
 ├── templates/                  # 模式1 数字模板 num1/2/3.png
 ├── include/                    # ConfigManager / CameraCapture / SerialPort / VisionPipeline
 ├── src/                        # main + 四个实现文件
 ├── tools/                      # Logger / FPSCounter / 锁封装 / ColorOrder / 模板与 HSV 工具
-└── scripts/                    # autostart.sh（看门狗）/ autostart-gui.sh（自启入口）
+└── scripts/                    # 看门狗 / 自启入口 / OpenCV 安装脚本 / udev 规则
 ```
+
+---
+
+## 许可
+
+本项目采用 **MIT License**（见 [`LICENSE`](LICENSE)）：
+
+- 允许任何人使用、修改、再分发、**商业使用**、再许可和销售；
+- 只需保留版权声明与许可声明；
+- 商业使用无需额外授权；如需商业支持/定制，可联系作者；
+- 第三方依赖（OpenCV、yaml-cpp 等）仍适用各自的许可证，见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
+
+图片（`docs/images/`）与模板（`templates/`）同样按 MIT 提供；靶标图案本身由赛事提供，仅作说明用途。
+
+## 贡献与安全
+
+- 贡献说明见 [`CONTRIBUTING.md`](CONTRIBUTING.md)（inbound = outbound，即贡献按 MIT 授权）。
+- 安全问题请按 [`SECURITY.md`](SECURITY.md) 私下报告，不要开公开 issue。

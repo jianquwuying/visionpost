@@ -1,8 +1,8 @@
-# RaspberryPi5_Vision_System — 项目核心记忆
+# visionpost — 项目开发笔记
 
-> **项目身份：** 26年第十二届工程实践与创新大赛 · 参赛作品
-> **用途：** 在新 AI 对话中快速恢复完整项目上下文；所有描述以当前源码为唯一事实来源。
-> **最后更新：** 2026-10-17
+> **项目身份：** 第十二届河北省大学生工程实践与创新能力大赛暨 2027 年中国大学生工程实践与创新能力大赛选拔赛 · 参赛作品
+> **用途：** 开发笔记 / 上下文恢复；可能滞后于代码，遇到不一致时以源码与 README 为准。
+> **最后更新：** 2026-10-31
 
 ---
 
@@ -10,8 +10,8 @@
 
 | 属性           | 值                                                   |
 |----------------|------------------------------------------------------|
-| 项目名称       | RaspberryPi5 视觉识别系统（RaspberryPi5_Vision_System） |
-| 参赛身份       | 26年第十二届工程实践与创新大赛 · 参赛作品              |
+| 项目名称       | visionpost（树莓派 5 实时视觉终端）                    |
+| 参赛身份       | 第十二届河北省大学生工程实践与创新能力大赛暨 2027 年中国大学生工程实践与创新能力大赛选拔赛 · 参赛作品 |
 | 可执行程序     | `visionpost`                                          |
 | 语言/标准      | C++17                                                |
 | 构建系统       | CMake 3.28+                                          |
@@ -422,7 +422,7 @@ make -j4
 ./visionpost /path/to/custom.yaml
 ```
 
-- 安装：`cmake --install .` 安装 `visionpost` 到 `bin/`，`config/` 与 `scripts/` 到 `share/RaspberryPi5_Vision_System/`。
+- 安装：`cmake --install .` 安装 `visionpost` 到 `bin/`，`config/` 与 `scripts/` 到 `share/visionpost/`。
 - 从 `build/` 运行是相对路径约定：YAML 中的 `../config`、`../templates`、`../record` 均以 `build/` 为基准。
 
 ### 看门狗与开机自启动
@@ -438,7 +438,7 @@ bash scripts/autostart.sh doctor   # 自检可执行文件/配置/串口/摄像�
 - `MAX_RESTARTS=10`：连续快速崩溃超过上限则放弃自动重启，保持终端提示（不重启整机）。
 - `STABLE_UPTIME_S=30`：上次存活 ≥30s 视为已恢复，清零崩溃计数。
 - 硬件未就绪（摄像头/串口未枚举）走 `HW_RETRY_SEC=5` 长间隔重试，不消耗崩溃额度。
-- `REMOVED_SUDO_MECHANISM` 取环境变量 `REMOVED_SUDO_MECHANISM`，否则默认 `1`；仅对存在但不可写的串口执行 `chmod 666`。
+- 串口权限不再使用 sudo 密码：优先 `sudo -n`，失败则提示加入 `dialout` 组或安装 `scripts/99-visionpost.rules`。
 - PID 文件 `/tmp/visionpost-autostart.pid`；日志 `record/autostart.log`、程序输出 `record/visionpost.out.log`。
 - 串口放权扫描 `serial.port` + `/dev/ttyACM*`、`/dev/ttyUSB*`、`/dev/ttyCH341USB*`；不含板载 `/dev/ttyAMA*`。
 - 开机入口 `scripts/autostart-gui.sh`：优先 `gnome-terminal` 弹窗，最多重试 3 次（每次间隔 6s），失败退化为 `nohup` 后台运行。
@@ -447,13 +447,13 @@ bash scripts/autostart.sh doctor   # 自检可执行文件/配置/串口/摄像�
 
 ## 15. 文件清单（26 个项目文件）
 
-> 不含 `build/`、`.git/` 与临时测试图 `1.jpg`/`2.jpg`/`3.jpg`。
+> 不含 `build/`、`.git/` 与 `docs/images/` 下的靶标照片。
 
 ```
 ├── CMakeLists.txt                   # C++17, ARM NEON, OpenCV 6 组件, install 规则
 ├── .gitignore
 ├── README.md
-├── 核心记忆.md                      # 本文件
+├── docs/PROJECT_NOTES.md            # 本文件（开发笔记）
 ├── templates/                       # 模式1 数字模板 num1/2/3.png（白底黑字）
 ├── config/vision.yaml               # 唯一配置来源，含各模式详细注释
 ├── include/

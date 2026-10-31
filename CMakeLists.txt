@@ -1,10 +1,12 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 jianquwuying
 # ============================================================================
-# 26年第十二届工程实践与创新大赛（参赛作品）
+# 第十二届河北省大学生工程实践与创新能力大赛暨 2027 年中国大学生工程实践与创新能力大赛选拔赛（参赛作品）
 # 树莓派 5 视觉终端 —— visionpost
 # C++17 + OpenCV + yaml-cpp；目标平台 Ubuntu 24.04 aarch64（Cortex-A76）
 # ============================================================================
 cmake_minimum_required(VERSION 3.28)
-project(RaspberryPi5_Vision_System VERSION 1.0.0 LANGUAGES CXX)
+project(visionpost VERSION 1.0.0 LANGUAGES CXX)
 
 # ---------------------------------------------------------------------------
 # 强制使用 C++17（不使用 GNU 扩展）
@@ -36,8 +38,12 @@ endif()
 # ---------------------------------------------------------------------------
 # 依赖项
 #   OpenCV ≥ 4.8（6 个组件） / yaml-cpp / 系统线程库
+#
+#   注意：Ubuntu 24.04 的 libopencv-dev 是 4.6.0，不满足 4.8 要求。
+#   请按 README 把 OpenCV 4.8.0 源码安装到 /usr/local；若 CMake 仍找错，
+#   可显式指定 -DOpenCV_DIR=/usr/local/lib/cmake/opencv4。
 # ---------------------------------------------------------------------------
-find_package(OpenCV 4.8 REQUIRED COMPONENTS
+find_package(OpenCV 4.8 QUIET COMPONENTS
     core
     imgproc
     videoio
@@ -45,6 +51,13 @@ find_package(OpenCV 4.8 REQUIRED COMPONENTS
     imgcodecs
     video
 )
+if(NOT OpenCV_FOUND)
+    message(FATAL_ERROR
+        "未找到 OpenCV >= 4.8。Ubuntu 24.04 的 libopencv-dev 为 4.6.0，不满足要求；"
+        "请按 README 安装 OpenCV 4.8.0 到 /usr/local（其 OpenCVConfig.cmake 即可用），"
+        "或指定 -DOpenCV_DIR=/usr/local/lib/cmake/opencv4。")
+endif()
+message(STATUS "OpenCV ${OpenCV_VERSION}")
 find_package(yaml-cpp REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -92,8 +105,8 @@ target_link_libraries(visionpost
 # ---------------------------------------------------------------------------
 # 安装
 #   可执行文件 → bin/
-#   config/    → share/RaspberryPi5_Vision_System/config/
-#   scripts/   → share/RaspberryPi5_Vision_System/scripts/（保留可执行权限）
+#   config/    → share/visionpost/config/
+#   scripts/   → share/visionpost/scripts/（保留可执行权限）
 # ---------------------------------------------------------------------------
 install(TARGETS visionpost DESTINATION bin)
 install(DIRECTORY config/  DESTINATION share/${PROJECT_NAME}/config)
